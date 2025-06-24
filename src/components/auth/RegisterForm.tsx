@@ -18,7 +18,7 @@ const registerSchema = z.object({
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
-export default function RegisterForm() {
+function RegisterForm() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isLoading, error, isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -197,3 +197,5 @@ export default function RegisterForm() {
     </div>
   );
 }
+
+export default RegisterForm;
