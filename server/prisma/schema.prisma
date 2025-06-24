@@ -1,0 +1,260 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  passwordHash   String
+  firstName      String
+  lastName       String
+  role           Role     @default(USER)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  lastLoginAt    DateTime?
+
+  // Relations
+  createdCampaigns Campaign[] @relation("CampaignCreator")
+  createdTemplates Template[] @relation("TemplateCreator")
+  apiKeys          ApiKey[]
+
+  @@map("users")
+}
+
+model Organization {
+  id               String   @id @default(cuid())
+  name             String
+  planType         PlanType @default(STARTER)
+  creditsRemaining Json     // Use Json type for PostgreSQL
+  settings         Json     // Use Json type for PostgreSQL
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  users     User[]
+  contacts  Contact[]
+  lists     ContactList[]
+  campaigns Campaign[]
+  templates Template[]
+  apiKeys   ApiKey[]
+
+  @@map("organizations")
+}
+
+model Contact {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String?
+  phone          String?
+  firstName      String
+  lastName       String
+  customFields   Json     @default("{}")
+  tags           String[] @default([])
+  status         ContactStatus @default(ACTIVE)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  lists    ContactListMember[]
+  messages Message[]
+
+  @@map("contacts")
+}
+
+model ContactList {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  members   ContactListMember[]
+  campaigns CampaignList[]
+
+  @@map("contact_lists")
+}
+
+model ContactListMember {
+  id        String      @id @default(cuid())
+  contactId String
+  contact   Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  listId    String
+  list      ContactList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  addedAt   DateTime    @default(now())
+
+  @@unique([contactId, listId])
+  @@map("contact_list_members")
+}
+
+model Campaign {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  type           CampaignType
+  name           String
+  subject        String?  // For email campaigns
+  content        String
+  status         CampaignStatus @default(DRAFT)
+  scheduledAt    DateTime?
+  sentAt         DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String
+  creator        User     @relation("CampaignCreator", fields: [createdBy], references: [id])
+
+  // Relations
+  lists    CampaignList[]
+  messages Message[]
+  analytics CampaignAnalytics?
+
+  @@map("campaigns")
+}
+
+model CampaignList {
+  id         String      @id @default(cuid())
+  campaignId String
+  campaign   Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  listId     String
+  list       ContactList @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, listId])
+  @@map("campaign_lists")
+}
+
+model Message {
+  id         String        @id @default(cuid())
+  campaignId String
+  campaign   Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contactId  String
+  contact    Contact       @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  status     MessageStatus @default(PENDING)
+  sentAt     DateTime?
+  deliveredAt DateTime?
+  openedAt   DateTime?
+  clickedAt  DateTime?
+  errorMessage String?
+  metadata   Json          @default("{}")
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@map("messages")
+}
+
+model Template {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  type           CampaignType
+  name           String
+  subject        String?  // For email templates
+  content        String
+  variables      String[] @default([])
+  isDefault      Boolean  @default(false)
+  category       String
+  tags           String[] @default([])
+  usageCount     Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String
+  creator        User     @relation("TemplateCreator", fields: [createdBy], references: [id])
+
+  @@map("templates")
+}
+
+model CampaignAnalytics {
+  id           String   @id @default(cuid())
+  campaignId   String   @unique
+  campaign     Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  totalSent    Int      @default(0)
+  delivered    Int      @default(0)
+  opened       Int      @default(0)
+  clicked      Int      @default(0)
+  bounced      Int      @default(0)
+  unsubscribed Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("campaign_analytics")
+}
+
+model ApiKey {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  key            String   @unique
+  permissions    String[] @default([])
+  status         ApiKeyStatus @default(ACTIVE)
+  lastUsed       DateTime?
+  requestCount   Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("api_keys")
+}
+
+// Enums
+enum Role {
+  ADMIN
+  MANAGER
+  USER
+}
+
+enum PlanType {
+  STARTER
+  PROFESSIONAL
+  BUSINESS
+  ENTERPRISE
+}
+
+enum ContactStatus {
+  ACTIVE
+  UNSUBSCRIBED
+  BOUNCED
+}
+
+enum CampaignType {
+  SMS
+  EMAIL
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  SENT
+  PAUSED
+  CANCELLED
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  FAILED
+}
+
+enum ApiKeyStatus {
+  ACTIVE
+  INACTIVE
+  REVOKED
+}
