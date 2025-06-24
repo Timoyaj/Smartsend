@@ -1,8 +1,63 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageSquare, Mail, Users, BarChart2, Zap, Shield, Check } from 'lucide-react';
 
 const LandingPage = () => {
+  // Stats for animation
+  const [deliveryRate, setDeliveryRate] = useState(0);
+  const [messagesSent, setMessagesSent] = useState(0);
+  const [customers, setCustomers] = useState(0);
+  
+  // Track if element is in viewport
+  const statsRef = useRef(null);
+  const [isStatsVisible, setIsStatsVisible] = useState(false);
+
+  // Function to animate counting
+  const animateValue = (setter, start, end, duration) => {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      setter(Math.floor(progress * (end - start) + start));
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
+      }
+    };
+    window.requestAnimationFrame(step);
+  };
+
+  // Intersection Observer to detect when stats section is visible
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsStatsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    
+    if (statsRef.current) {
+      observer.observe(statsRef.current);
+    }
+    
+    return () => {
+      if (statsRef.current) {
+        observer.unobserve(statsRef.current);
+      }
+    };
+  }, []);
+
+  // Start animation when stats section becomes visible
+  useEffect(() => {
+    if (isStatsVisible) {
+      animateValue(setDeliveryRate, 0, 99.8, 2000);
+      animateValue(setMessagesSent, 0, 5, 2500);
+      animateValue(setCustomers, 0, 2500, 3000);
+    }
+  }, [isStatsVisible]);
+
   return (
     <div className="landing-page">
       {/* Header */}
@@ -48,19 +103,25 @@ const LandingPage = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="py-12 bg-gray-50">
+      <section ref={statsRef} className="py-12 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white p-6 rounded-lg shadow text-center">
-              <div className="text-4xl font-bold text-blue-600 mb-2">99.8%</div>
+            <div className="bg-white p-6 rounded-lg shadow text-center transform transition duration-500 hover:scale-105">
+              <div className="text-4xl font-bold text-blue-600 mb-2">
+                {deliveryRate.toFixed(1)}%
+              </div>
               <div className="text-gray-600">Delivery Rate</div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow text-center">
-              <div className="text-4xl font-bold text-blue-600 mb-2">5M+</div>
+            <div className="bg-white p-6 rounded-lg shadow text-center transform transition duration-500 hover:scale-105">
+              <div className="text-4xl font-bold text-blue-600 mb-2">
+                {messagesSent}M+
+              </div>
               <div className="text-gray-600">Messages Sent Daily</div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow text-center">
-              <div className="text-4xl font-bold text-blue-600 mb-2">2,500+</div>
+            <div className="bg-white p-6 rounded-lg shadow text-center transform transition duration-500 hover:scale-105">
+              <div className="text-4xl font-bold text-blue-600 mb-2">
+                {customers.toLocaleString()}+
+              </div>
               <div className="text-gray-600">Happy Customers</div>
             </div>
           </div>
@@ -76,7 +137,7 @@ const LandingPage = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
+            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition transform hover:-translate-y-1">
               <div className="bg-blue-100 p-3 rounded-full w-14 h-14 flex items-center justify-center mb-4">
                 <Users className="h-6 w-6 text-blue-600" />
               </div>
@@ -84,7 +145,7 @@ const LandingPage = () => {
               <p className="text-gray-600">Easily import, organize, and segment your contacts. Create custom fields and tags for precise targeting.</p>
             </div>
             
-            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
+            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition transform hover:-translate-y-1">
               <div className="bg-blue-100 p-3 rounded-full w-14 h-14 flex items-center justify-center mb-4">
                 <Mail className="h-6 w-6 text-blue-600" />
               </div>
@@ -92,7 +153,7 @@ const LandingPage = () => {
               <p className="text-gray-600">Send SMS and email campaigns from a single platform. Reach your audience where they're most responsive.</p>
             </div>
             
-            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
+            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition transform hover:-translate-y-1">
               <div className="bg-blue-100 p-3 rounded-full w-14 h-14 flex items-center justify-center mb-4">
                 <BarChart2 className="h-6 w-6 text-blue-600" />
               </div>
@@ -100,7 +161,7 @@ const LandingPage = () => {
               <p className="text-gray-600">Track delivery rates, opens, clicks, and conversions in real-time. Make data-driven decisions to optimize your campaigns.</p>
             </div>
             
-            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
+            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition transform hover:-translate-y-1">
               <div className="bg-blue-100 p-3 rounded-full w-14 h-14 flex items-center justify-center mb-4">
                 <Zap className="h-6 w-6 text-blue-600" />
               </div>
@@ -108,7 +169,7 @@ const LandingPage = () => {
               <p className="text-gray-600">Create automated sequences based on customer behavior. Deliver the right message at the right time.</p>
             </div>
             
-            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
+            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition transform hover:-translate-y-1">
               <div className="bg-blue-100 p-3 rounded-full w-14 h-14 flex items-center justify-center mb-4">
                 <Shield className="h-6 w-6 text-blue-600" />
               </div>
@@ -116,7 +177,7 @@ const LandingPage = () => {
               <p className="text-gray-600">Stay compliant with built-in tools for managing opt-outs, consent, and regulatory requirements like GDPR and TCPA.</p>
             </div>
             
-            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition">
+            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition transform hover:-translate-y-1">
               <div className="bg-blue-100 p-3 rounded-full w-14 h-14 flex items-center justify-center mb-4">
                 <MessageSquare className="h-6 w-6 text-blue-600" />
               </div>
@@ -136,7 +197,7 @@ const LandingPage = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="bg-white rounded-lg shadow-md overflow-hidden transform transition duration-300 hover:shadow-xl">
               <div className="p-6 border-b">
                 <h3 className="text-2xl font-bold mb-2">Starter</h3>
                 <div className="flex items-baseline mb-4">
@@ -160,7 +221,7 @@ const LandingPage = () => {
               </div>
             </div>
             
-            <div className="bg-white rounded-lg shadow-md overflow-hidden transform scale-105 relative">
+            <div className="bg-white rounded-lg shadow-md overflow-hidden transform scale-105 relative transition duration-300 hover:shadow-xl">
               <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">
                 POPULAR
               </div>
@@ -196,7 +257,7 @@ const LandingPage = () => {
               </div>
             </div>
             
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="bg-white rounded-lg shadow-md overflow-hidden transform transition duration-300 hover:shadow-xl">
               <div className="p-6 border-b">
                 <h3 className="text-2xl font-bold mb-2">Business</h3>
                 <div className="flex items-baseline mb-4">
@@ -253,9 +314,9 @@ const LandingPage = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="bg-white p-6 rounded-lg shadow-md transform transition duration-300 hover:shadow-xl hover:-translate-y-1">
               <div className="text-blue-600 mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M10 11h-4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1z"></path>
                   <path d="M18 11h-4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1z"></path>
                   <path d="M10 19h-4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1z"></path>
@@ -276,9 +337,9 @@ const LandingPage = () => {
               </div>
             </div>
             
-            <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="bg-white p-6 rounded-lg shadow-md transform transition duration-300 hover:shadow-xl hover:-translate-y-1">
               <div className="text-blue-600 mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M10 11h-4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1z"></path>
                   <path d="M18 11h-4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1z"></path>
                   <path d="M10 19h-4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1z"></path>
@@ -299,9 +360,9 @@ const LandingPage = () => {
               </div>
             </div>
             
-            <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="bg-white p-6 rounded-lg shadow-md transform transition duration-300 hover:shadow-xl hover:-translate-y-1">
               <div className="text-blue-600 mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M10 11h-4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1z"></path>
                   <path d="M18 11h-4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1z"></path>
                   <path d="M10 19h-4a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1z"></path>
@@ -353,17 +414,17 @@ const LandingPage = () => {
               <p className="text-gray-400 mb-4">Powerful bulk SMS and email platform for businesses of all sizes.</p>
               <div className="flex space-x-4">
                 <a href="#" className="text-gray-400 hover:text-white transition">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
                   </svg>
                 </a>
                 <a href="#" className="text-gray-400 hover:text-white transition">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83A7.72 7.72 0 0 0 23 3z"></path>
                   </svg>
                 </a>
                 <a href="#" className="text-gray-400 hover:text-white transition">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
                     <rect x="2" y="9" width="4" height="12"></rect>
                     <circle cx="4" cy="4" r="2"></circle>
